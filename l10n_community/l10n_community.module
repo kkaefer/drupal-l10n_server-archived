@@ -1329,6 +1329,11 @@ function theme_l10n_community_copy_button() {
 function l10n_community_format_text($string, $sid = NULL, $delta = NULL) {
   static $path = NULL, $title = NULL;
 
+  if (is_array($string)) {
+    $diff = $string;
+    $string = $string['original'];
+  }
+
   if (!isset($path)) {
     $path = base_path() . drupal_get_path('module', 'l10n_community');
     $title = t('line break');
@@ -1336,12 +1341,20 @@ function l10n_community_format_text($string, $sid = NULL, $delta = NULL) {
 
   $original = check_plain($string);
 
+  if (isset($diff)) {
+    $string = '<code class="removed">' . $diff['old'] . '</code><br /><code class="inserted">' . $diff['new'] . '</code>';
+  }
+  else {
+    $string = $original;
+  }
+
   // Replace all newline chars in the string with an indicator image.
   $string = str_replace(
     array("\n", "\\\\n"),
     '<img src="'. $path .'/images/newline.png" alt="'. $title .'" title="'. $title .'" /><br />',
-    check_plain($string)
+    $string
   );
+
   // Make all %, ! and @ marked pladeholders emphasized.
   $string = preg_replace(
     '~((%|!|@)[0-9a-zA-Z_-]+)~',
