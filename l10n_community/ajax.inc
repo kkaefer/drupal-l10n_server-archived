@@ -56,9 +56,6 @@ function l10n_community_string_details($langcode = NULL, $sid = 0) {
 }
 
 function l10n_community_string_suggestions($langcode = NULL, $sid = 0) {
-  // Look for an existing active translation, if any.
-  $existing_string = db_fetch_object(db_query("SELECT sid, tid, translation FROM {l10n_community_translation} WHERE sid = %d AND language = '%s' AND is_suggestion = 0 AND is_active = 1", $sid, $langcode));
-
   // Existing, "unresolved" suggestions.
   $suggestions = array();
   $result = db_query("SELECT t.tid, t.sid, t.translation, t.uid_entered, t.time_entered, u.name FROM {l10n_community_translation} t LEFT JOIN {users} u ON u.uid = t.uid_entered WHERE t.language = '%s' AND t.sid = %d AND t.is_active = 1 AND t.is_suggestion = 1 ORDER BY t.time_entered", $langcode, $sid);
@@ -74,27 +71,7 @@ function l10n_community_string_suggestions($langcode = NULL, $sid = 0) {
     // Since we no longer store an additional copy of strings in JS
     // and the null byte is stripped out by browsers (?), we need to
     // use a DOM-safe delimiter: ";  "
-    if (strpos($suggestion->translation, "\0")) {
-      $translation = str_replace(chr(0), ";  ", $suggestion->translation);
-    }
-    else {
-      if (isset($existing_string->translation) && drupal_strlen($existing_string->translation) > 0) {
-        include_once 'diff.inc';
-
-        $diff = worddiff(
-          check_plain($existing_string->translation),
-          check_plain($suggestion->translation)
-        );
-
-        $translation = worddiff_render($diff);
-        $translation['original'] = $suggestion->translation;
-      }
-      else {
-        $existing_string = $suggestion;
-        $translation = $suggestion->translation;
-      }
-    }
-
+    $translation = strpos($suggestion->translation, "\0") ? str_replace(chr(0), ";  ", $suggestion->translation) : $suggestion->translation;
     $translation = l10n_community_format_text($translation, $suggestion->sid);
     $suggestions[] = $translation ."<div class='l10n-approval-buttons'>". $approve_button . $decline_button .'</div><div class="l10n-suggestion-by">'. t('by %user at %date', array('%user' => (empty($suggestion->name) ? variable_get('anonymous', t('Anonymous')) : $suggestion->name), '%date' => format_date($suggestion->time_entered))) .'</div>';
   }

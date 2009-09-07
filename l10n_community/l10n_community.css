@@ -61,7 +61,6 @@ div.admin form {
 
 /* Emphasized replaceable parts of translatables */
 em.l10n-community-marker {
-  font-style: normal;
   font-weight: bold;
 }
 
@@ -194,24 +193,6 @@ table.l10n-server-translate label.option {
 
 ul.l10n-community-strings {
   margin: 0;
-}
-
-ul.l10n-community-strings code.removed {
-  background: #FFD8D8;
-}
-
-ul.l10n-community-strings code.removed del {
-  background: #FF8888;
-  text-decoration: none;
-}
-
-ul.l10n-community-strings code.inserted {
-  background: #DDF8CC;
-}
-
-ul.l10n-community-strings code.inserted ins {
-  background: #99FF99;
-  text-decoration: none;
 }
 
 ul.l10n-community-strings li {
