@@ -258,6 +258,16 @@ function l10n_community_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
   );
+  $items['translate/languages/%l10n_community_language/list'] = array(
+    'title' => 'List',
+    'page callback' => 'l10n_community_list_page',
+    'page arguments' => array(2),
+    'file' => 'list.inc',
+    'access callback' => 'l10n_community_contribute_access',
+    'access arguments' => array(2),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+  );
   $items['translate/languages/%l10n_community_language/export'] = array(
     'title' => 'Export',
     'page callback' => 'l10n_community_export_page',
@@ -391,7 +401,17 @@ function l10n_community_init() {
  * Implementation of hook_perm().
  */
 function l10n_community_perm() {
-  return array('access localization community', 'submit suggestions', 'submit translations and approve suggestions', 'administer localization community', 'export gettext templates and translations', 'import gettext files');
+  return array(
+    'access localization community',
+    'submit suggestions',
+    'submit translations and approve suggestions',
+    'administer localization community',
+    'export gettext templates and translations',
+    'import gettext files',
+    'submit translation suggestions',
+    'moderate other people\'s suggestions',
+    'moderate own suggestions',
+  );
 }
 
 /**
@@ -1271,6 +1291,22 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     // moderate.inc
     'l10n_community_moderation_form' => array(
       'arguments' => array('form' => NULL),
+    ),
+    // list.inc
+    'l10n_community_list_translation' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_radio' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_source' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_translation_list' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_table' => array(
+      'arguments' => array('element' => NULL),
     ),
   );
 }
