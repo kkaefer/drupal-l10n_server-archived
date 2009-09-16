@@ -74,7 +74,7 @@ function l10n_community_filter_form(&$form_state, $filters, $limited = FALSE) {
     L10N_STATUS_NO_SUGGESTION  => t('Has no suggestion'),
     L10N_STATUS_HAS_SUGGESTION => t('Has suggestion'),
   );
-  
+
   $form['project'] = array(
     '#title' => t('Project'),
     '#default_value' => isset($filters['project']) ? $filters['project']->title : '',
@@ -196,6 +196,7 @@ function l10n_community_filter_form_submit($form, &$form_state) {
     $form_state['redirect'] = array($_GET['q'], $filters);
   }
 }
+
 
 // = Translation viewer ========================================================
 
@@ -629,13 +630,13 @@ function l10n_community_get_strings($langcode, $filters, $pager = NULL) {
 
   if (!isset($filters['project'])) {
     // No project based filtering.
-    $sql = "SELECT DISTINCT s.sid, s.value, s.context, t.tid, t.language, t.translation, t.uid_entered, t.uid_approved, t.time_entered, t.time_approved, t.has_suggestion, t.is_suggestion, t.is_active FROM {l10n_community_string} s LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 WHERE";
+    $sql = "SELECT DISTINCT s.sid, s.value, s.context, t.tid, t.language, t.translation, t.uid_entered, t.uid_approved, t.time_entered, t.time_approved, t.has_suggestion, t.is_suggestion, t.is_active, u.name as username, u2.name as username_approved FROM {l10n_community_string} s LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 LEFT JOIN {users} u ON u.uid = t.uid_entered LEFT JOIN {users} u2 ON u2.uid = t.uid_approved WHERE";
     $sql_count = "SELECT COUNT(DISTINCT(s.sid)) FROM {l10n_community_string} s LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 WHERE";
     $sql_args = array($langcode);
   }
   else {
     // Project based filtering and language based filtering built in.
-    $sql = "SELECT DISTINCT s.sid, s.value, s.context, t.tid, t.language, t.translation, t.uid_entered, t.uid_approved, t.time_entered, t.time_approved, t.has_suggestion, t.is_suggestion, t.is_active FROM {l10n_community_release} r INNER JOIN {l10n_community_file} f ON r.rid = f.rid INNER JOIN {l10n_community_line} l ON f.fid = l.fid INNER JOIN {l10n_community_string} s ON l.sid = s.sid LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 WHERE r.pid = %d";
+    $sql = "SELECT DISTINCT s.sid, s.value, s.context, t.tid, t.language, t.translation, t.uid_entered, t.uid_approved, t.time_entered, t.time_approved, t.has_suggestion, t.is_suggestion, t.is_active, u.name as username, u2.name as username_approved FROM {l10n_community_release} r INNER JOIN {l10n_community_file} f ON r.rid = f.rid INNER JOIN {l10n_community_line} l ON f.fid = l.fid INNER JOIN {l10n_community_string} s ON l.sid = s.sid LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 LEFT JOIN {users} u ON u.uid = t.uid_entered LEFT JOIN {users} u2 ON u2.uid = t.uid_approved WHERE r.pid = %d";
     $sql_count = "SELECT COUNT(DISTINCT(s.sid)) FROM {l10n_community_release} r INNER JOIN {l10n_community_file} f ON r.rid = f.rid INNER JOIN {l10n_community_line} l ON f.fid = l.fid INNER JOIN {l10n_community_string} s ON l.sid = s.sid LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid AND t.language = '%s' AND t.is_active = 1 AND t.is_suggestion = 0 WHERE r.pid = %d";
     $sql_args = array($langcode, $filters['project']->pid);
   }
@@ -668,25 +669,25 @@ function l10n_community_get_strings($langcode, $filters, $pager = NULL) {
 
   // Restriction based on string status by translation / suggestions.
   $status_sql = '';
-  if ($filters['status'] & L10N_STATUS_UNTRANSLATED) {
+  if (isset($filters['status']) && $filters['status'] & L10N_STATUS_UNTRANSLATED) {
     // We are doing a LEFT JOIN especially to look into the case, when we have nothing
     // to match in the translation table, but we still have the string. (We get our
     // records in the result set in this case). The translation field is empty or
     // NULL in this case, as we are not allowing NULL there and only saving an empty
     // translation if there are suggestions but no translation yet.
     $status_sql .= " AND (t.translation is NULL OR t.translation = '')";
-  } 
-  elseif ($filters['status'] & L10N_STATUS_TRANSLATED) {
+  }
+  elseif (isset($filters['status']) && $filters['status'] & L10N_STATUS_TRANSLATED) {
     $status_sql .= " AND t.translation != ''";
   }
-  if ($filters['status'] & L10N_STATUS_HAS_SUGGESTION) {
+  if (isset($filters['status']) && $filters['status'] & L10N_STATUS_HAS_SUGGESTION) {
     // Note that we are not searching in the suggestions themselfs, only
     // the source and active translation values. The user interface underlines
     // that we are  looking for strings which have suggestions, not the
     // suggestions themselfs.
     $status_sql .= " AND t.has_suggestion = 1";
   }
-  elseif ($filters['status'] & L10N_STATUS_NO_SUGGESTION) {
+  elseif (isset($filters['status']) && $filters['status'] & L10N_STATUS_NO_SUGGESTION) {
     $status_sql .= " AND ((t.has_suggestion IS NULL) OR (t.has_suggestion = 0))";
   }
   $sql .= $status_sql;
@@ -752,9 +753,9 @@ function l10n_community_build_filter_values($params, $suggestions = FALSE) {
     'context' => isset($params['context']) ? (string) $params['context'] : 'all',
     'limit' => (isset($params['limit']) && in_array($params['limit'], array(5, 10, 20, 30))) ? (int) $params['limit'] : 10,
   );
-  
-  // The project can be a dropdown or text field depending on number of 
-  // projects. So we need to sanitize its value. 
+
+  // The project can be a dropdown or text field depending on number of
+  // projects. So we need to sanitize its value.
   if (isset($params['project']) && ($project = l10n_community_get_projects(array('uri' => $params['project'])))) {
     $filter['project'] = $project;
     if (isset($params['release']) && ($releases = l10n_community_get_releases($project->uri)) && isset($releases[$params['release']])) {

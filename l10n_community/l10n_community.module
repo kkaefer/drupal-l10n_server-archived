@@ -255,6 +255,16 @@ function l10n_community_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => -5,
   );
+  $items['translate/languages/%l10n_community_language/list'] = array(
+    'title' => 'List',
+    'page callback' => 'l10n_community_list_page',
+    'page arguments' => array(2),
+    'file' => 'list.inc',
+    'access callback' => 'l10n_community_contribute_access',
+    'access arguments' => array(2),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
+  );
   $items['translate/languages/%l10n_community_language/export'] = array(
     'title' => 'Export',
     'page callback' => 'l10n_community_export_page',
@@ -1097,7 +1107,7 @@ function l10n_community_target_save($sid, $translation, $langcode, $uid, $sugges
   else {
     // No active translation exists.
     if ($suggestion) {
-      // No translation yet -> INSERT empty placeholder so we can track 
+      // No translation yet -> INSERT empty placeholder so we can track
       // suggestions. We track and exclude these by translation = '' later.
       db_query("INSERT INTO {l10n_community_translation} (sid, translation, language, uid_entered, time_entered, has_suggestion, is_active) VALUES (%d, '', '%s', 0, %d, 1, 1)", $sid, $langcode, time());
       db_query("INSERT INTO {l10n_community_translation} (sid, language, translation, uid_entered, time_entered, is_suggestion, is_active) VALUES (%d, '%s', '%s', %d, %d, 1, 1)", $sid, $langcode, $translation, $uid, time());
@@ -1268,6 +1278,22 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     // moderate.inc
     'l10n_community_moderation_form' => array(
       'arguments' => array('form' => NULL),
+    ),
+    // list.inc
+    'l10n_community_list_translation' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_radio' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_source' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_translation_list' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_list_table' => array(
+      'arguments' => array('element' => NULL),
     ),
   );
 }
