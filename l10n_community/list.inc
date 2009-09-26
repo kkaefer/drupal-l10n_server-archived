@@ -33,8 +33,8 @@ function _l10n_community_list_permission($langcode, $account = NULL) {
     // Minimal permission
     $global = L10N_PERMISSION_VIEW;
     $global |= user_access("submit translation suggestions", $account) ? L10N_PERMISSION_SUGGEST : 0;
-    $global |= user_access("moderate other people's suggestions", $account) ? L10N_PERMISSION_MODERATE_OTHERS : 0;
-    $global |= user_access("moderate own suggestions", $account) ? L10N_PERMISSION_MODERATE_OWN : 0;
+    //$global |= user_access("moderate other people's suggestions", $account) ? L10N_PERMISSION_MODERATE_OTHERS : 0;
+    //$global |= user_access("moderate own suggestions", $account) ? L10N_PERMISSION_MODERATE_OWN : 0;
     //$global |= user_access("mark other people's translations as stable", $account) ? L10N_PERMISSION_STABILIZE_OTHERS : 0;
     //$global |= user_access("mark own translations as stable", $account) ? L10N_PERMISSION_STABILIZE_OWN : 0;
 
@@ -78,8 +78,9 @@ function l10n_community_list_form(&$form_state, $language, $filters, $strings) {
     '#redirect' => array($_GET['q'], $redirect_url),
     'langcode' => array('#type' => 'value', '#value' => $language->language),
     'pager_top' => array('#weight' => -10, '#value' => $pager),
+    'submit_top' => array('#type' => 'submit', '#value' => t('Save changes'), '#access' => $permission !== L10N_PERMISSION_VIEW),
     'strings' => array('#tree' => TRUE, '#theme' => 'l10n_community_list_table'),
-    'submit' => array('#type' => 'submit', '#value' => t('Save changes')),
+    'submit' => array('#type' => 'submit', '#value' => t('Save changes'), '#access' => $permission !== L10N_PERMISSION_VIEW),
     'pager_bottom' => array('#weight' => 10, '#value' => $pager),
   );
 
@@ -185,12 +186,12 @@ function _l10n_community_list_translation(&$form_state, $string, $permission, $s
       );
     }
     // if ($may_stabilize) {
-    //       $form['stable'] = array(
-    //         '#type' => 'checkbox',
-    //         '#title' => t('Stable'),
-    //         '#default_value' => FALSE, // $string->is_stable,
-    //       );
-    //     }
+    //   $form['stable'] = array(
+    //     '#type' => 'checkbox',
+    //     '#title' => t('Stable'),
+    //     '#default_value' => FALSE, // $string->is_stable,
+    //   );
+    // }
     if ($string->tid == 'new') {
       $form['value'] = array_fill(0, count($source->value), array(
         '#type' => 'textarea',
@@ -341,7 +342,7 @@ function l10n_community_list_submit($form, &$form_state) {
   $declined = 0;
   $approved = 0;
   $inserted = 0;
-  $stabilized = 0;
+  // $stabilized = 0;
 
   $langcode = $form_state['values']['langcode'];
 
@@ -373,10 +374,10 @@ function l10n_community_list_submit($form, &$form_state) {
             _l10n_community_list_approve_string($langcode, $sid, $tid);
             $approved++;
           }
-          //if (/*!$options['original']->is_stable && */!empty($options['stable'])) {
-          //  dsm('mark as stable');
-          //  $stabilized++;
-          //}
+          // if (/*!$options['original']->is_stable && */!empty($options['stable'])) {
+          //   dsm('mark as stable');
+          //   $stabilized++;
+          // }
         }
         elseif (!empty($options['declined'])) {
           // also remove stable flag!
