@@ -100,7 +100,7 @@ function l10n_community_import_form_submit($form, &$form_state) {
       // Get status report on what was done in the process.
       list($inserted, $updated, $unchanged, $suggested) = _l10n_community_import_one_string();
       drupal_set_message(t('The translation was successfully imported.'));
-      l10n_community_update_message($inserted, $updated, $unchanged, $suggested, 0);
+      l10n_community_update_message(0, 0, $inserted, $updated, $unchanged, $suggested);
       cache_clear_all('l10n:stats:'. $form_state['values']['langcode'], 'cache');
     }
   }

@@ -101,23 +101,23 @@ li.translation > .actions {
     position:relative; top:1px;
   }
   li.translation > .actions li.declined label {
-    background:url(decline.png) no-repeat right top;
+    background:url(images/decline.png) no-repeat right top;
   }
   li.translation > .actions li.edit label {
-    background:url(edit.png) no-repeat right top;
+    background:url(images/edit.png) no-repeat right top;
   }
   li.translation.is-declined > .actions li.declined label {
-    background-image:url(undecline.png);
+    background-image:url(images/undecline.png);
   }
   li.translation > .actions li.stable label {
-    background:url(stable-inactive.png) no-repeat right top;
+    background:url(images/stable-inactive.png) no-repeat right top;
   }
   li.translation.is-stable > .actions li.stable label,
   li.translation:hover > .actions li label {
     opacity:1;
   }
   li.translation.is-stable > .actions li.stable label {
-    background-image:url(stable-active.png);
+    background-image:url(images/stable-active.png);
   }
 
   .l10n-string > br {

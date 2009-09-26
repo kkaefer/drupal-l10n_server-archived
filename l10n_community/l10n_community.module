@@ -239,10 +239,10 @@ function l10n_community_menu() {
   );
   // Tabs to translate, import and export projects.
   $items['translate/languages/%l10n_community_language/list'] = array(
-    'title' => 'List',
-    'page callback' => 'l10n_community_list_page',
+    'title' => 'Translate',
+    'page callback' => 'l10n_community_translate_page',
     'page arguments' => array(2),
-    'file' => 'list.inc',
+    'file' => 'translate.inc',
     'access callback' => 'l10n_community_get_permission',
     'access arguments' => array(2, NULL, L10N_PERMISSION_VIEW),
     'type' => MENU_LOCAL_TASK,
@@ -872,6 +872,19 @@ function l10n_community_get_languages($key = NULL) {
 }
 
 /**
+ * Returns a language object for a specific language.
+ *
+ * @param $langcode
+ *   Language code, for example 'hu', 'pt-br', 'de' or 'it'.
+ * @return
+ *   A populated language object.
+ */
+function l10n_community_get_language($langcode) {
+  $languages = l10n_community_get_languages();
+  return $languages[$langcode];
+}
+
+/**
  * Get translation permission level for a specific user.
  *
  *
@@ -1132,32 +1145,23 @@ function l10n_community_trim($translation, $source) {
   return $matches[1] . trim($translation) . $matches[2];
 }
 
-/**
- * Set a message based on the number of translations changed.
- *
- * Used by both the save and import process.
- */
-function l10n_community_update_message($inserted, $updated, $unchanged, $suggested, $duplicates) {
-  // Inform user about changes made.
-  $message = array();
-  if ($inserted) {
-    $message[] = format_plural($inserted, '1 new translation added', '@count new translations added');
-  }
-  if ($suggested) {
-    $message[] = format_plural($suggested, '1 new suggestion added', '@count new suggestions added');
-  }
-  if ($updated) {
+function l10n_community_update_message($declined, $approved, $inserted, $updated = 0, $unchanged = 0, $suggested = 0) {
+  $messages = array();
+  if ($declined)
+    $messages[] = format_plural($declined, '1 translation declined', '@count translations declined');
+  if ($approved)
+    $messages[] = format_plural($approved, '1 translation approved', '@count translations approved');
+  if ($inserted)
+    $messages[] = format_plural($inserted, '1 translation added', '@count translations added');
+  if ($updated)
     $message[] = format_plural($updated, '1 translation updated', '@count translations updated');
-  }
-  if ($unchanged) {
+  if ($unchanged)
     $message[] = format_plural($unchanged, '1 translation unchanged', '@count translations unchanged');
-  }
-  if ($duplicates) {
-    $message[] = format_plural($duplicates, '1 duplicate translation not saved', '@count duplicate translations not saved');
-  }
-  if (count($message)) {
-    drupal_set_message(join(', ', $message) .'.');
-  }
+  if ($suggested)
+    $message[] = format_plural($suggested, '1 new suggestion added', '@count new suggestions added');
+
+  if ($messages)
+    drupal_set_message(implode(', ', $messages));
 }
 
 /**
@@ -1218,14 +1222,6 @@ function l10n_community_project_uri_by_title($title) {
   return db_result(db_query("SELECT uri FROM {l10n_community_project} WHERE title = '%s'", $title));
 }
 
-/**
- * Check whether $suggestion is duplicate for $sid in $langcode.
- */
-function l10n_community_is_duplicate($suggestion, $sid, $langcode) {
-  // Use BINARY matching to avoid marking case-corrections as duplicate.
-  return (bool) db_result(db_query("SELECT s.sid FROM {l10n_community_string} s LEFT JOIN {l10n_community_translation} t ON s.sid = t.sid WHERE t.translation = BINARY '%s' AND t.is_active = 1 AND t.language = '%s' AND s.sid = %d", $suggestion, $langcode, $sid));
-}
-
 // = Theme functions ===========================================================
 
 /**
@@ -1233,16 +1229,6 @@ function l10n_community_is_duplicate($suggestion, $sid, $langcode) {
  */
 function l10n_community_theme($existing, $type, $theme, $path) {
   return array(
-    // l10n_community.module
-    'l10n_community_button' => array(
-      'arguments' => array('type' => NULL, 'class' => NULL, 'extras' => ''),
-    ),
-    'l10n_community_strings' => array(
-      'arguments' => array('items' => NULL, 'form' => TRUE),
-    ),
-    'l10n_community_copy_button' => array(
-      'arguments' => array(),
-    ),
     // pages.inc
     'l10n_community_progress_columns' => array(
       'arguments' => array('sum' => NULL, 'translated' => NULL, 'has_suggestion' => NULL),
@@ -1257,6 +1243,21 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     'l10n_community_filter_form' => array(
       'arguments' => array('form' => NULL),
     ),
+    'l10n_community_translate_translation' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_translate_radio' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_translate_source' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_translate_translation_list' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'l10n_community_translate_table' => array(
+      'arguments' => array('element' => NULL),
+    ),
     // l10n_community.admin.inc
     'l10n_community_admin_projects_form' => array(
       'arguments' => array('form' => NULL),
@@ -1264,165 +1265,7 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     'l10n_community_admin_releases_form' => array(
       'arguments' => array('form' => NULL),
     ),
-    // moderate.inc
-    'l10n_community_moderation_form' => array(
-      'arguments' => array('form' => NULL),
-    ),
-    // list.inc
-    'l10n_community_list_translation' => array(
-      'arguments' => array('element' => NULL),
-    ),
-    'l10n_community_list_radio' => array(
-      'arguments' => array('element' => NULL),
-    ),
-    'l10n_community_list_source' => array(
-      'arguments' => array('element' => NULL),
-    ),
-    'l10n_community_list_translation_list' => array(
-      'arguments' => array('element' => NULL),
-    ),
-    'l10n_community_list_table' => array(
-      'arguments' => array('element' => NULL),
-    ),
   );
-}
-
-/**
- * Theme a textual button.
- *
- * Text values are centralized here so it is easy to change.
- */
-function theme_l10n_community_button($type, $class, $extras = '') {
-  switch ($type) {
-    case 'translate':
-      $text = t('Translate');
-      break;
-    case 'lookup':
-      $text = t('Information');
-      break;
-    case 'edit':
-      // Source string and translation edit field.
-      $text = t('Edit');
-      break;
-    case 'has-suggestion':
-    case 'has-no-suggestion':
-    case 'untranslated':
-      // Star in a filled circle.
-      $text = t('Suggestions');
-      break;
-    case 'approve':
-      // Checkmark.
-      $text = t('Approve');
-      break;
-    case 'decline':
-      // Checkmark.
-      $text = t('Decline');
-      break;
-    case 'save':
-      // Save button.
-      $text = t('Save');
-      break;
-    case 'clear':
-      // Clear form button.
-      $text = t('Clear');
-      break;
-  }
-  return ' <span title="'. $text .'" class="'. $class .' l10n-button"'. (!empty($extras) ? (' '. $extras) : '') .'><b><b>'. $text .'</b></b></span>';
-}
-
-/**
- * Theme a list of translatable strings. Adds a copy button to each string
- * for quickly copying its source text into a translation form.
- */
-function theme_l10n_community_strings($items, $form = TRUE) {
-  $output = "<ul class='l10n-community-strings'>";
-  foreach ($items as $i => $item) {
-    $output .= "<li class='clear-block'>";
-    if ($form && ($i < 1)) {
-      // Only print copy button if we are displaying a form and on the first item.
-      // For plurals, only the first item will have the copy button, but will copy
-      // all the values into the form.
-      $output .= "<div class='buttons'>". theme('l10n_community_copy_button') ."</div>";
-    }
-    $output .= "<div class='string'>". $item ."</div>";
-    $output .= "</li>";
-  }
-  $output .= "</ul>";
-  return $output;
-}
-
-/**
- * Copy button for string values.
- */
-function theme_l10n_community_copy_button() {
-  return theme('l10n_community_button', 'edit', 'l10n-community-copy');
-}
-
-/**
- * Format string for display. Takes plurals into account.
- */
-function l10n_community_format_string($value, $rich_markup = TRUE) {
-  if (strpos($value, "\0") !== FALSE) {
-    $items = explode(chr(0), $value);
-    foreach ($items as &$item) {
-      $item = l10n_community_format_text($item, NULL, NULL, $rich_markup);
-    }
-    return theme('item_list', $items);
-  }
-  else {
-    return l10n_community_format_text($value, NULL, NULL, $rich_markup);
-  }
-}
-
-/**
- * Format translatable strings with custom icons.
- *
- * We emphasize some parts of strings, so those are easy to recognize.
- * Newlines and replacement strings are made more visible.
- *
- * @param $string
- *   Source string to translate.
- * @param $sid
- *   Source string ID.
- * @param $delta
- *   Sequence ID of plural version if $string is a plural variant.
- * @param $rich_markup
- *   Whether to output rich markup (used for the translaton UI).
- */
-function l10n_community_format_text($string, $sid = NULL, $delta = NULL, $rich_markup = TRUE) {
-  static $path = NULL, $title = NULL;
-
-  if (!isset($path)) {
-    $path = base_path() . drupal_get_path('module', 'l10n_community');
-    $title = t('line break');
-  }
-
-  // Replace all newline chars in the string with an indicator image.
-  $formatted = str_replace(
-    array("\n", "\\\\n"),
-    '<img src="'. $path .'/images/newline.png" alt="'. $title .'" title="'. $title .'" /><br />',
-    check_plain($string)
-  );
-  // Make all %, ! and @ marked pladeholders emphasized.
-  $formatted = preg_replace(
-    '~((%|!|@)[0-9a-zA-Z_-]+)~',
-    '<em class="l10n-community-marker">\\1</em>',
-    $formatted
-  );
-
-  if ($rich_markup) {
-    $class = '';
-    if (isset($sid) && isset($delta)) {
-      $class = ' class="string-'. $sid .'-'. $delta .'"';
-    }
-    elseif ($sid) {
-      $class = ' class="string-'. $sid .'"';
-    }
-    return '<div'. $class .'><span class="string">'. $formatted .'</span><span class="original hidden">'. check_plain($string) .'</span></div>';
-  }
-  else {
-    return '<span class="string">'. $formatted .'</span>';
-  }
 }
 
 /**
