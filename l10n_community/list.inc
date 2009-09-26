@@ -1,55 +1,12 @@
 <?php
 
-
-define('L10N_PERMISSION_VIEW', 1);
-define('L10N_PERMISSION_SUGGEST', 2);
-define('L10N_PERMISSION_MODERATE_OTHERS', 4);
-define('L10N_PERMISSION_MODERATE_OWN', 8);
-define('L10N_PERMISSION_STABILIZE_OTHERS', 16);
-define('L10N_PERMISSION_STABILIZE_OWN', 32);
-
-
-
-function _l10n_community_list_permission($langcode, $account = NULL) {
-  static $permissions = array();
-  global $user;
+function l10n_community_list_page($langcode) {
+  require_once 'translate.inc';
 
   drupal_add_css(drupal_get_path('module', 'l10n_community') .'/list/l10n.css');
   drupal_add_js(drupal_get_path('module', 'l10n_community') .'/list/jquery13.js');
   drupal_add_js(drupal_get_path('module', 'l10n_community') .'/list/jquery.worddiff.js');
   drupal_add_js(drupal_get_path('module', 'l10n_community') .'/list/l10n.js');
-
-  if (empty($langcode)) {
-    return L10N_PERMISSION_VIEW;
-  }
-  if (!isset($account)) {
-    $account = $user;
-  }
-
-  if (!isset($permissions[$account->uid])) {
-    $permissions[$account->uid] = array();
-  }
-  if (!isset($permissions[$account->uid][$langcode])) {
-    // Minimal permission
-    $global = L10N_PERMISSION_VIEW;
-    $global |= user_access("submit translation suggestions", $account) ? L10N_PERMISSION_SUGGEST : 0;
-    //$global |= user_access("moderate other people's suggestions", $account) ? L10N_PERMISSION_MODERATE_OTHERS : 0;
-    //$global |= user_access("moderate own suggestions", $account) ? L10N_PERMISSION_MODERATE_OWN : 0;
-    //$global |= user_access("mark other people's translations as stable", $account) ? L10N_PERMISSION_STABILIZE_OTHERS : 0;
-    //$global |= user_access("mark own translations as stable", $account) ? L10N_PERMISSION_STABILIZE_OWN : 0;
-
-    if (/*$account->uid !== 1 && */module_exists('l10n_groups')) {
-      die('check _l10n_community_list_permission()');
-    }
-
-    $permissions[$account->uid][$langcode] = $global;
-  }
-
-  return $permissions[$account->uid][$langcode];
-}
-
-function l10n_community_list_page($langcode) {
-  require_once 'translate.inc';
 
   $language = l10n_community_get_language($langcode);
   $filters = l10n_community_build_filter_values($_GET);
@@ -68,7 +25,7 @@ function l10n_community_list_page($langcode) {
 }
 
 function l10n_community_list_form(&$form_state, $language, $filters, $strings) {
-  $permission = _l10n_community_list_permission($language->language);
+  $permission = l10n_community_get_permission($language->language);
   $pager = theme('pager', NULL, $filters['limit'], 0);
   $redirect_url = $_GET;
   unset($redirect_url['q']);

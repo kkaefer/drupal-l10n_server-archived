@@ -11,7 +11,8 @@
  */
 function l10n_community_import_page($langcode) {
   $languages = l10n_community_get_languages();
-  if (($perm = l10n_community_get_permission($langcode)) == L10N_PERM_ALL) {
+  $permission = l10n_community_get_permission($langcode);
+  if ($permission & L10N_PERMISSION_MODERATE_OWN) {
     drupal_set_title(t('Import translations to @language', array('@language' => $languages[$langcode]->name)));
   }
   else {
@@ -23,13 +24,13 @@ function l10n_community_import_page($langcode) {
       l(t('Home'), NULL),
       l(t('Translate projects'), 'translate'))
   );
-  return drupal_get_form('l10n_community_import_form', $langcode, $perm);
+  return drupal_get_form('l10n_community_import_form', $langcode, $permission);
 }
 
 /**
  * Translation import form.
  */
-function l10n_community_import_form($form_state, $langcode, $perm) {
+function l10n_community_import_form($form_state, $langcode, $permission) {
   $form['#attributes']['enctype'] = 'multipart/form-data';
 
   $form['langcode'] = array(
@@ -49,7 +50,7 @@ function l10n_community_import_form($form_state, $langcode, $perm) {
     '#description' => t('Check if the translations you import need discussion. If checked, all translations in the imported file will be saved as suggestions.'),
   );
   // Restrict to suggestions if no permission to submit translations directly.
-  if ($perm != L10N_PERM_ALL) {
+  if ($permission & L10N_PERMISSION_MODERATE_OWN) {
     $form['is_suggestion']['#type'] = 'value';
     $form['is_suggestion']['#value'] = 1;
   }
