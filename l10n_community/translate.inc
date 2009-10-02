@@ -264,8 +264,18 @@ function _l10n_community_translate_string(&$form_state, $source, $language, $per
   $form = array(
     '#string' => $source,
     '#langcode' => $language->language,
-    'source' => array('#value' => _l10n_community_translate_render_string($source->value))
+    'source' => array(
+      'string' => array('#value' => _l10n_community_translate_render_string($source->value)),
+    ),
   );
+  
+  if ($permission & L10N_PERMISSION_SUGGEST) {
+    $form['source']['edit'] = array(
+      '#value' => t('Edit Copy'),
+      '#prefix' => '<label title="'. t('Edit Copy') .'">',
+      '#suffix' => '</label>',
+    );
+  }
 
   // Add the current string (either a approved translation or a mock object
   // for the "untranslated" string).
@@ -392,6 +402,20 @@ function _l10n_community_translate_translation(&$form_state, $string, $permissio
   return $form;
 }
 
+function theme_l10n_community_translate_actions($element) {
+  $actions = '';
+  foreach (array('declined', /*'stable', */'edit') as $type) {
+    if (isset($element[$type])) {
+      $actions .= '<li class="'. $type .'">'. drupal_render($element[$type]) .'</li>';
+    }
+  }
+  if (!empty($actions)) {
+    return '<ul class="actions">'. $actions .'</ul>';
+  }
+  else {
+    return '';
+  }
+}
 
 function theme_l10n_community_translate_translation($element) {
   if (!isset($element['#attributes']['class'])) {
@@ -413,17 +437,7 @@ function theme_l10n_community_translate_translation($element) {
   }
 
   $output = '<li'. drupal_attributes($element['#attributes']) .'>';
-
-  $actions = '';
-  foreach (array('declined', /*'stable', */'edit') as $type) {
-    if (isset($element[$type])) {
-      $actions .= '<li class="'. $type .'">'. drupal_render($element[$type]) .'</li>';
-    }
-  }
-  if (!empty($actions)) {
-    $output .= '<ul class="actions">'. $actions .'</ul>';
-  }
-
+  $output .= theme('l10n_community_translate_actions', $element);
   $output .= drupal_render($element['active']);
 
   if (isset($element['author'])) {
@@ -466,7 +480,8 @@ function theme_l10n_community_translate_translation_list($element) {
 }
 
 function theme_l10n_community_translate_source($element) {
-  $output  = '<label class="l10n-string">'. drupal_render($element['source']) .'</label>';
+  $output = theme('l10n_community_translate_actions', $element['source']);
+  $output .= '<label class="l10n-string">'. drupal_render($element['source']['string']) .'</label>';
   $output .= '<div class="l10n-usage"><a href="'. url('translate/details/'. $element['#langcode'] .'/'. $element['#string']->sid) .'" class="l10n-more">'. t('More information') .'</a></div>';
   return $output;
 }
@@ -917,17 +932,8 @@ function l10n_community_string_details($langcode = NULL, $sid = 0) {
     $previous_project = $instance->project_title;
   }
   $output[] = join(', ', $list);
-  $usage_info = '<strong>'. t('Used in:') .'</strong>'. theme('item_list', $output);
+  print '<strong>'. t('Used in:') .'</strong>'. theme('item_list', $output);
 
-  // Information about translator and translation timestamp.
-  $translation_info = '';
-  $translation = db_fetch_object(db_query("SELECT translation, uid_entered, time_entered FROM {l10n_community_translation} WHERE language = '%s' AND sid = %d AND is_active = 1 AND is_suggestion = 0", $langcode, $sid));
-  if (!empty($translation->translation)) {
-    $account = user_load(array('uid' => $translation->uid_entered));
-    $translation_info = t('<strong>Translated by:</strong><br /> %username at %date', array('%username' => $account->name, '%date' => format_date($translation->time_entered)));
-  }
-
-  print $usage_info . $translation_info; // . $suggestion_info;
   exit;
 }
 

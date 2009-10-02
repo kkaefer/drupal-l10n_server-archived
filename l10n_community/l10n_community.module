@@ -238,7 +238,7 @@ function l10n_community_menu() {
     'weight' => -20,
   );
   // Tabs to translate, import and export projects.
-  $items['translate/languages/%l10n_community_language/list'] = array(
+  $items['translate/languages/%l10n_community_language/translate'] = array(
     'title' => 'Translate',
     'page callback' => 'l10n_community_translate_page',
     'page arguments' => array(2),
@@ -247,6 +247,16 @@ function l10n_community_menu() {
     'access arguments' => array(2, NULL, L10N_PERMISSION_VIEW),
     'type' => MENU_LOCAL_TASK,
     'weight' => -10,
+  );
+  $items['translate/languages/%l10n_community_language/moderate'] = array(
+    'title' => 'Moderate',
+    'page callback' => 'l10n_community_moderate_page',
+    'page arguments' => array(2),
+    'file' => 'moderate.inc',
+    'access callback' => 'l10n_community_moderation_access',
+    'access arguments' => array(2),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -6,
   );
   $items['translate/languages/%l10n_community_language/import'] = array(
     'title' => 'Import',
@@ -356,6 +366,13 @@ function l10n_community_project_admin_load($uri) {
     return $uri;
   }
   return FALSE;
+}
+
+/**
+ * Access to the moderation screen.
+ */
+function l10n_community_moderation_access($langcode) {
+  return user_access('browse translations') && (l10n_community_get_permission($langcode) & L10N_PERMISSION_REVIEW);
 }
 
 /**
@@ -1244,6 +1261,9 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     'l10n_community_translate_translation' => array(
       'arguments' => array('element' => NULL),
     ),
+    'l10n_community_translate_actions' => array(
+      'arguments' => array('element' => NULL),
+    ),
     'l10n_community_translate_radio' => array(
       'arguments' => array('element' => NULL),
     ),
@@ -1263,7 +1283,78 @@ function l10n_community_theme($existing, $type, $theme, $path) {
     'l10n_community_admin_releases_form' => array(
       'arguments' => array('form' => NULL),
     ),
+    // moderate.inc
+    'l10n_community_moderation_form' => array(
+      'arguments' => array('form' => NULL),
+    ),
   );
+}
+
+/**
+ * Format string for display. Takes plurals into account.
+ */
+function l10n_community_format_string($value, $rich_markup = TRUE) {
+  if (strpos($value, "\0") !== FALSE) {
+    $items = explode(chr(0), $value);
+    foreach ($items as &$item) {
+      $item = l10n_community_format_text($item, NULL, NULL, $rich_markup);
+    }
+    return theme('item_list', $items);
+  }
+  else {
+    return l10n_community_format_text($value, NULL, NULL, $rich_markup);
+  }
+}
+
+/**
+ * Format translatable strings with custom icons.
+ *
+ * We emphasize some parts of strings, so those are easy to recognize.
+ * Newlines and replacement strings are made more visible.
+ *
+ * @param $string
+ *   Source string to translate.
+ * @param $sid
+ *   Source string ID.
+ * @param $delta
+ *   Sequence ID of plural version if $string is a plural variant.
+ * @param $rich_markup
+ *   Whether to output rich markup (used for the translaton UI).
+ */
+function l10n_community_format_text($string, $sid = NULL, $delta = NULL, $rich_markup = TRUE) {
+  static $path = NULL, $title = NULL;
+
+  if (!isset($path)) {
+    $path = base_path() . drupal_get_path('module', 'l10n_community');
+    $title = t('line break');
+  }
+
+  // Replace all newline chars in the string with an indicator image.
+  $formatted = str_replace(
+    array("\n", "\\\\n"),
+    '<img src="'. $path .'/images/newline.png" alt="'. $title .'" title="'. $title .'" /><br />',
+    check_plain($string)
+  );
+  // Make all %, ! and @ marked pladeholders emphasized.
+  $formatted = preg_replace(
+    '~((%|!|@)[0-9a-zA-Z_-]+)~',
+    '<em class="l10n-community-marker">\\1</em>',
+    $formatted
+  );
+
+  if ($rich_markup) {
+    $class = '';
+    if (isset($sid) && isset($delta)) {
+      $class = ' class="string-'. $sid .'-'. $delta .'"';
+    }
+    elseif ($sid) {
+      $class = ' class="string-'. $sid .'"';
+    }
+    return '<div'. $class .'><span class="string">'. $formatted .'</span><span class="original hidden">'. check_plain($string) .'</span></div>';
+  }
+  else {
+    return '<span class="string">'. $formatted .'</span>';
+  }
 }
 
 /**

@@ -40,17 +40,14 @@
       return string;
     };
 
-    $('td.source').each(function () {
-      var source = $(this);
+    $('td.translation').parent().each(function () {
+      var all = $('li.translation', this);
+      var strings = all.find('.l10n-string > span');
+      var source = $('td.source', this);
 
       source.find('.l10n-string span').each(function () {
         $(this).html(markup($(this).html()));
       });
-    });
-
-    $('td.translation').each(function () {
-      var all = $('li.translation', this);
-      var strings = all.find('.l10n-string > span');
 
       strings.each(function () {
         var orig = $(this).html(), markedUp = markup(orig);
@@ -66,6 +63,22 @@
       };
 
       var textareas = all.filter('.new-translation').find('textarea');
+
+      $(this).find('ul.actions .edit').click(function () {
+        var translation = $(this).closest('td.source, li.translation');
+        var confirmed = undefined;
+        textareas.each(function (i) {
+          var textarea = $(this);
+          var val = textarea.val();
+          if (confirmed || val === textarea.attr('defaultValue') || !val || (confirmed === undefined && (confirmed = confirm("Do you want to overwrite the current suggestion?")))) {
+            textarea.val(translation.find('.l10n-string > span:eq('+ i +')').text()).keyup();
+            if (i == 0) {
+              // Since we can't have multiple focuses, we jut focus the first textarea.
+              textarea.focus();
+            }
+          }
+        });
+      });
 
       all.each(function () {
         var translation = $(this);
@@ -112,22 +125,6 @@
         translation.find('> .author span[title]').click(function () {
           var $this = $(this), html = $this.html();
           $this.html($this.attr('title')).attr('title', html);
-        });
-
-        translation.find('> .actions .edit').click(function () {
-          var confirmed = undefined;
-          textareas.each(function (i) {
-            var textarea = $(this);
-            var val = textarea.val();
-            if (confirmed || val === textarea.attr('defaultValue') || !val || (confirmed === undefined && (confirmed = confirm("Do you want to overwrite the current suggestion?")))) {
-              textarea.val(translation.find('.l10n-string > span:eq('+ i +')').text()).keyup();
-              if (i == 0) {
-                // Since we can't have multiple focuses, we jut focus the first textarea.
-                textarea.focus();
-              }
-            }
-          });
-
         });
 
         if (isTranslation) {
