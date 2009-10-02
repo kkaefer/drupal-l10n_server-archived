@@ -1,5 +1,5 @@
 <?php
-// $Id: translate.inc,v 1.1.2.7.2.19 2009/09/18 18:03:19 goba Exp $
+// $Id: translate.inc,v 1.1.2.7.2.20 2009/09/30 12:17:08 goba Exp $
 
 /**
  * @file
@@ -484,7 +484,6 @@ function theme_l10n_community_translate_table($element) {
       array('class' => 'translation', 'data' => theme('l10n_community_translate_translation_list', $element[$key])),
     );
   }
-
 
   return theme('table', $header, $rows, array('class' => 'l10n-table'));
 }
